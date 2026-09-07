@@ -13,7 +13,13 @@ cd "$APP_DIR"
 echo "==> Fetching $BRANCH"
 BEFORE="$(git rev-parse HEAD)"
 git fetch origin "$BRANCH"
-git pull --ff-only origin "$BRANCH"
+# History rewrite (orphan squash / force-push) cannot fast-forward.
+if ! git merge-base --is-ancestor HEAD "origin/$BRANCH" 2>/dev/null; then
+  echo "==> Non-fast-forward history detected; hard-resetting to origin/$BRANCH"
+  git reset --hard "origin/$BRANCH"
+else
+  git pull --ff-only origin "$BRANCH"
+fi
 AFTER="$(git rev-parse HEAD)"
 
 if [[ "$BEFORE" == "$AFTER" && "$FORCE_DEPLOY" != "1" ]]; then
