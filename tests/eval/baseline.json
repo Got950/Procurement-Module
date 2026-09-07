@@ -1,0 +1,33 @@
+{
+  "description": "Baseline for Copilot golden eval. Update only after intentional, reviewed changes.",
+  "promptVersion": "copilot-system-v3",
+  "expectedCaseIds": [
+    "safety-untrusted-fence",
+    "safety-no-sql-tool",
+    "authz-requester-tool-surface",
+    "trajectory-limits-bounded",
+    "authz-idor-get-indent",
+    "authz-forbidden-send-rfq",
+    "authz-procurement-cannot-finance-final",
+    "hitl-submit-requires-confirmation",
+    "hitl-submit-confirm-executes",
+    "trajectory-duplicate-tool-loop",
+    "reliability-model-unavailable",
+    "tool-selection-list-indents",
+    "unknown-tool-rejected",
+    "safety-document-prompt-injection"
+  ],
+  "expectedCanaryIds": [
+    "safety-untrusted-fence",
+    "safety-no-sql-tool",
+    "authz-requester-tool-surface",
+    "trajectory-limits-bounded",
+    "authz-idor-get-indent",
+    "authz-forbidden-send-rfq",
+    "hitl-submit-requires-confirmation",
+    "hitl-submit-confirm-executes",
+    "trajectory-duplicate-tool-loop",
+    "reliability-model-unavailable",
+    "safety-document-prompt-injection"
+  ]
+}

@@ -1,0 +1,180 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces — cool gray/blue enterprise */
+  --color-bg: #f4f6f9;
+  --color-bg-2: #eef1f6;
+  --chrome-bg: #ffffff;
+  --chrome-bg-deep: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-2: #ffffff;
+  --color-surface-muted: #f8fafc;
+
+  /* Text */
+  --color-fg: #0f172a;
+  --color-muted: #64748b;
+  --color-muted-alpha: rgba(15, 23, 42, 0.62);
+
+  /* Borders & restrained blue accent */
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+  --color-accent: #2563eb;
+  --color-accent-hover: #1d4ed8;
+  --color-accent-soft: rgba(37, 99, 235, 0.08);
+  --color-accent-soft-strong: rgba(37, 99, 235, 0.14);
+
+  /* Status */
+  --color-success: #15803d;
+  --color-success-soft: #ecfdf5;
+  --color-warning: #b45309;
+  --color-warning-soft: #fffbeb;
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fef2f2;
+
+  /* Documents */
+  --color-doc-paper: #ffffff;
+  --color-doc-inner: #fafcfe;
+
+  /* Radius & elevation — restrained */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+
+  /* Layout */
+  --sidebar-width: 15.5rem;
+  --header-height: 3.5rem;
+}
+
+body {
+  @apply min-h-screen font-sans antialiased;
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Shared surface utilities — keep class names for compatibility */
+.glass-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-xs);
+}
+
+.glass-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-xs);
+}
+
+.glass-dropdown {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+}
+
+.proc-workflow-timeline {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+.proc-doc-section {
+  background: var(--color-surface);
+}
+
+/* Data surfaces */
+.app-surface {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.app-table thead {
+  background: var(--color-surface-muted);
+}
+
+.app-table th {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.app-table td,
+.app-table th {
+  padding: 0.75rem 1rem;
+}
+
+.app-table tbody tr {
+  border-top: 1px solid var(--color-border);
+  transition: background-color 120ms ease;
+}
+
+.app-table tbody tr:hover {
+  background: color-mix(in srgb, var(--color-accent-soft) 70%, white);
+}
+
+[data-radix-select-content] {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* Focus ring — accessible, consistent */
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+/* Empty state helper */
+.app-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+/* Login page — subtle atmospheric drift */
+@keyframes login-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+.login-float-slow {
+  animation: login-float 14s ease-in-out infinite;
+}
+
+.login-float-slower {
+  animation: login-float 20s ease-in-out infinite;
+  animation-delay: -4s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-float-slow,
+  .login-float-slower {
+    animation: none;
+  }
+}

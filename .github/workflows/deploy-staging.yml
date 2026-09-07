@@ -1,0 +1,65 @@
+name: Deploy staging (EC2 app only)
+
+# Pushes to master that change the running app → rebuild web/worker on the
+# existing EC2 host. Does NOT run Terraform, recreate Postgres, or wipe volumes.
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "src/**"
+      - "public/**"
+      - "migrations/**"
+      - "package.json"
+      - "package-lock.json"
+      - "Dockerfile"
+      - "docker-entrypoint.sh"
+      - "docker-compose.staging.yml"
+      - "next.config.*"
+      - "tsconfig.json"
+      - "postcss.config.*"
+      - "deploy/Caddyfile"
+      - "deploy/update-staging-app.sh"
+      - ".github/workflows/deploy-staging.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Deploy app on EC2
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.STAGING_SSH_HOST }}
+          username: ${{ secrets.STAGING_SSH_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          # Small staging host: image build can take several minutes.
+          command_timeout: 40m
+          script: |
+            set -euo pipefail
+            cd /opt/asseflow/app
+            # Bootstrap once if this host does not have the update script yet.
+            if [[ ! -f deploy/update-staging-app.sh ]]; then
+              git fetch origin master
+              git pull --ff-only origin master
+              FORCE_DEPLOY=1 bash deploy/update-staging-app.sh
+            else
+              bash deploy/update-staging-app.sh
+            fi
+
+      - name: Public health check
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS https://medflow-13-50-17-61.sslip.io/api/health/live \
+              && curl -fsS https://medflow-13-50-17-61.sslip.io/api/health/ready; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Public health check failed" >&2
+          exit 1

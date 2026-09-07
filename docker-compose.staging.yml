@@ -1,0 +1,74 @@
+# MedFlow — EC2 staging stack (web + worker + Postgres)
+# Uses existing Dockerfile ROLE=web|worker pattern. Do not expose Postgres publicly.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-pharma_procurement}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  web:
+    build: .
+    image: asseflow:staging
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      ROLE: web
+      DATABASE_URL: ${DATABASE_URL}
+      # Next.js otherwise binds only to the container hostname (healthcheck breaks).
+      HOSTNAME: "0.0.0.0"
+      PORT: "3000"
+      # Cap heap on the small staging host (≈2 vCPU / 3.7 GiB).
+      NODE_OPTIONS: "--max-old-space-size=768"
+    ports:
+      # Loopback only — public HTTP/HTTPS terminates at host reverse proxy (Caddy).
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/data/uploads
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 50s
+      retries: 3
+
+  worker:
+    image: asseflow:staging
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    env_file: .env
+    environment:
+      ROLE: worker
+      DATABASE_URL: ${DATABASE_URL}
+      NODE_OPTIONS: "--max-old-space-size=512"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/data/uploads
+
+volumes:
+  pgdata:
+  uploads:

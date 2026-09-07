@@ -1,0 +1,19 @@
+# MedFlow — public reverse proxy (host-level, not in Docker).
+# Certificates are managed by Caddy under /var/lib/caddy — never commit private keys.
+# Proxy target: Next.js web container bound to loopback only.
+#
+# Final evaluator config: automatic HTTPS + HTTP→HTTPS redirect.
+# Requires Security Group TCP 80 and 443 open to 0.0.0.0/0 for ACME + browsers.
+
+medflow-13-50-17-61.sslip.io {
+	encode gzip
+	reverse_proxy 127.0.0.1:3000
+
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}

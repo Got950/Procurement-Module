@@ -1,0 +1,65 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: staging or prod
+        required: true
+        default: staging
+      image_tag:
+        description: Image tag to deploy
+        required: true
+        default: latest
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Configure AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push image
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          REPO: ${{ vars.ECR_REPOSITORY }}
+          TAG: ${{ inputs.image_tag }}
+        run: |
+          docker build -t "$REGISTRY/$REPO:$TAG" .
+          docker push "$REGISTRY/$REPO:$TAG"
+      - name: Run migrations (ECS run-task)
+        env:
+          CLUSTER: ${{ vars.ECS_CLUSTER }}
+          TASK_DEF: ${{ vars.MIGRATION_TASK_DEFINITION }}
+          SUBNETS: ${{ vars.PRIVATE_SUBNETS }}
+          SECURITY_GROUPS: ${{ vars.ECS_SECURITY_GROUPS }}
+        run: |
+          echo "Operator: run migration task against RDS before updating services."
+          echo "Example: aws ecs run-task --cluster $CLUSTER --task-definition $TASK_DEF ..."
+          # Concrete run-task wiring depends on the migration task definition created in Terraform.
+      - name: Update ECS services
+        env:
+          CLUSTER: ${{ vars.ECS_CLUSTER }}
+        run: |
+          aws ecs update-service --cluster "$CLUSTER" --service "${{ vars.ECS_WORKER_SERVICE }}" --force-new-deployment
+          aws ecs update-service --cluster "$CLUSTER" --service "${{ vars.ECS_WEB_SERVICE }}" --force-new-deployment
+          aws ecs wait services-stable --cluster "$CLUSTER" --services "${{ vars.ECS_WEB_SERVICE }}" "${{ vars.ECS_WORKER_SERVICE }}"
